@@ -40,6 +40,7 @@ export const getDestinationById = (req, res) => {
     if (datas.length === 0) {
       return res.status(404).json({
         status: 404,
+        success: false,
         message: "Destination not found",
       });
     }
@@ -66,7 +67,7 @@ export const createDestination = (req, res) => {
   } = req.body;
 
   const query =
-    "INSERT INTO destinations (name, description, location, image_url, duration, is_freetransport, price) VALUES (?, ?, ?, ?,?,?,?)";
+    "INSERT INTO destinations (name, description, location, image_url, duration, is_freetransport, price, created_at, updated_at) VALUES (?, ?, ?, ?,?,?,?)";
   const values = [
     name,
     description,
@@ -92,6 +93,57 @@ export const createDestination = (req, res) => {
       success: true,
       message: "Destination created successfully",
       // data: datas,
+    });
+  });
+};
+
+export const editDestinationById = (req, res) => {
+  const {
+    name,
+    description,
+    location,
+    image_url,
+    duration,
+    is_freetransport,
+    price,
+  } = req.body;
+
+  const id = req.params.id;
+
+  const query =
+    "UPDATE destinations SET name = ?, description = ?, location = ?, image_url = ?, duration = ?, is_freetransport = ?, price = ? WHERE id = ?";
+  const values = [
+    name,
+    description,
+    location,
+    image_url,
+    duration,
+    is_freetransport,
+    price,
+    id,
+  ];
+
+  db.query(query, values, (err, result) => {
+    if (err) {
+      return res.status(500).json({
+        status: 500,
+        message: "Internal Server Error",
+        error: err.message,
+      });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        status: 404,
+        success: false,
+        message: `Destination with ID ${id} not found`,
+      });
+    }
+
+    res.status(200).json({
+      status: 200,
+      success: true,
+      message: "Update destination successfully",
     });
   });
 };
