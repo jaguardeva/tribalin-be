@@ -35,6 +35,7 @@ export const register = async (req, res) => {
           // Kirim respon jika ada error
           return res.status(500).json({
             status: 500,
+            success: false,
             message: "Internal Server Error",
             error: err.message,
           });
@@ -43,6 +44,7 @@ export const register = async (req, res) => {
         // Kirim respon sukses
         res.status(200).json({
           status: 200,
+          success: true,
           message: "OK",
           data: datas,
         });
@@ -84,6 +86,7 @@ export const login = async (req, res) => {
         // Send successful response with user data and token
         res.status(200).json({
             status: 200,
+            success: true,
             message: "OK",
             data: user,
             token: token
