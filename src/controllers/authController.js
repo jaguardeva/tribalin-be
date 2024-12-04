@@ -7,9 +7,14 @@ import crypto from "crypto";  // Impor crypto untuk menghasilkan key dinamis
 // Setel JWT_EXPIRES_IN sesuai kebutuhan
 const JWT_EXPIRES_IN = "3m"; // Token berlaku 3 menit
 
-// Fungsi untuk membuat secret key dinamis menggunakan crypto
-const generateJwtSecret = () => {
-    return crypto.randomBytes(64).toString("hex");  // Menghasilkan key acak 64 byte
+let STATIC_JWT_SECRET;
+
+export const generateJwtSecret = () => {
+    // Jika belum ada secret key, buat satu kali
+    if (!STATIC_JWT_SECRET) {
+        STATIC_JWT_SECRET = crypto.randomBytes(64).toString("hex");
+    }
+    return STATIC_JWT_SECRET;
 };
 
 // Register
@@ -52,50 +57,45 @@ export const register = async (req, res) => {
 };
 
 // Login
-export const login = async (req, res) => {
-    const { email, password } = req.body;
+export const login = async (req, res) => {     
+    const { email, password } = req.body;      
+    
+    if (!email || !password) {         
+        return res.status(400).json({ message: "All fields are required." });     
+    }      
 
-    if (!email || !password) {
-        return res.status(400).json({ message: "All fields are required." });
-    }
-
-    try {
-        // Use promise-based query method
-        const [users] = await db.promise().query("SELECT * FROM users WHERE email = ?", [email]);
-        
-        // Check if user exists
+    try {         
+        const [users] = await db.promise().query("SELECT * FROM users WHERE email = ?", [email]);                  
         const user = users[0];
-        if (!user) {
-            return res.status(404).json({ message: "User not found." });
-        }
+        
+        if (!user) {             
+            return res.status(404).json({ message: "User not found." });         
+        }          
 
-        // Check password validity
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        const isPasswordValid = await bcrypt.compare(password, user.password);          
+        
+        if (!isPasswordValid) {             
+            return res.status(401).json({ message: "Invalid credentials." });         
+        }          
 
-        if (!isPasswordValid) {
-            return res.status(401).json({ message: "Invalid credentials." });
-        }
+        // Gunakan fungsi generateJwtSecret yang sudah dimodifikasi
+        const token = jwt.sign(             
+            { id: user.id, role: user.role },             
+            generateJwtSecret(), // Sekarang akan selalu menghasilkan key yang sama             
+            { expiresIn: JWT_EXPIRES_IN }         
+        );          
 
-        // Create JWT with dynamic secret key
-        const token = jwt.sign(
-            { id: user.id, role: user.role },
-            generateJwtSecret(), // Use dynamic secret key
-            { expiresIn: JWT_EXPIRES_IN }
-        );
-
-        // Send successful response with user data and token
-        res.status(200).json({
-            status: 200,
-            success: true,
-            message: "OK",
-            data: user,
-            token: token
-        });
-    } catch (error) {
-        // Handle any unexpected errors
-        console.error(error);
-        res.status(500).json({ message: "Server error", error: error.message });
-    }
+        res.status(200).json({             
+            status: 200,             
+            success: true,             
+            message: "OK",             
+            data: user,             
+            token: token         
+        });     
+    } catch (error) {         
+        console.error(error);         
+        res.status(500).json({ message: "Server error", error: error.message });     
+    } 
 };
 
 
