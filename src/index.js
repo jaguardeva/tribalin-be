@@ -11,7 +11,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use("/api", accommodationRoute);
-app.use("/api", authRoute);
+app.use("/api/auth", authRoute);
 app.use("/api", destionationRoute);
 
 app.get("/", (req, res) => {

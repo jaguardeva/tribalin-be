@@ -124,3 +124,34 @@ export const secure = (req, res) => {
     res.status(401).json({ message: "Invalid or expired token." });
   }
 };
+
+export const logout = (req, res) => {
+    // Ambil token dari header Authorization
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+        return res.status(400).json({
+            message: "No token provided.",
+        });
+    }
+
+    try {
+        // Verifikasi token (opsional, untuk memastikan token valid sebelum logout)
+        const secret = generateJwtSecret(); // Secret key dinamis
+        jwt.verify(token, secret);
+
+        // Kirimkan respon sukses tanpa melakukan perubahan di database
+        res.status(200).json({
+            status: 200,
+            success: true,
+            message: "Logout successful. Token is now invalid.",
+        });
+    } catch (error) {
+        // Jika token tidak valid atau expired
+        res.status(401).json({
+            message: "Invalid or expired token.",
+            error: error.message,
+        });
+    }
+};
+
