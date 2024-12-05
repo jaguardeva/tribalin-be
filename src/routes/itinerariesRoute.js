@@ -9,7 +9,7 @@ const router = express.Router();
 // GET semua itineraries - bisa diakses oleh user yang terautentikasi
 router.get("/itineraries",    
     verifyToken,
-    checkRole("admin"),
+    checkRole("user"),
     getItineraries
 );
 

@@ -5,6 +5,7 @@ import accommodationRoute from "./routes/accommodationRoute.js";
 import authRoute from "./routes/authRoute.js";
 import destionationRoute from "./routes/destinationRoute.js";
 import itinerariesRoute from "./routes/itinerariesRoute.js";
+import transaction from "./routes/transactionRoute.js";
 
 dotenv.config();
 
@@ -15,6 +16,8 @@ app.use("/api", accommodationRoute);
 app.use("/api/auth", authRoute);
 app.use("/api", destionationRoute);
 app.use("/api", itinerariesRoute);
+app.use("/api", transaction);
+
 
 app.get("/", (req, res) => {
   res.status(200).json({

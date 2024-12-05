@@ -1,7 +1,7 @@
 import db from "../../config/database.js";
 
 export const getItineraries = (req, res) => {
-    const query = "SELECT * FROM itineraries"; // Deklarasi dengan const
+    const query = "SELECT * FROM itineraries"; 
   
     db.query(query, (err, datas) => {
       if (err) {
