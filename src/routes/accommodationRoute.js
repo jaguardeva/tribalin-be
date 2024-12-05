@@ -18,7 +18,7 @@ router.post(
   createAccommodation
 );
 router.put(
-  "/accommodations/:id",
+  "/accommodations/:id/edit",
   verifyToken,
   checkRole("admin"),
   editAccommodationById

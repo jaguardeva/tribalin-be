@@ -26,7 +26,7 @@ router.post(
 
 // PUT edit destinasi - hanya bisa diakses oleh admin (uncomment jika dibutuhkan)
 router.put(
-  "/destinations/:id",
+  "/destinations/:id/edit",
   verifyToken,
   checkRole("admin"),
   editDestinationById
@@ -34,7 +34,7 @@ router.put(
 
 // // DELETE destinasi - hanya bisa diakses oleh admin (uncomment jika dibutuhkan)
 router.delete(
-  "/destinations/:id",
+  "/destinations/:id/delete",
   verifyToken,
   checkRole("admin"),
   deleteDestinationById
