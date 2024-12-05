@@ -1,26 +1,49 @@
 import db from "../../config/database.js";
 
-export const getTransportationBooking = (req, res) => {
-    const query = "SELECT * FROM transportation_booking"; // Deklarasi dengan const
 
-    db.query(query, (err, datas) => {
-        if (err) {
-            res.status(500).json({
-            status: 500,
-            success: false,
-            message: "Internal Server Error",
-            error: err.message,
-        });
+export const getTransportationBooking = (req, res) => {
+    const { role, id: userId } = req.user; // Ambil informasi user dari req.user
+    
+    // Query dasar
+    let query = "SELECT * FROM transportation_booking";
+    const values = [];
+  
+    // Jika role adalah "user", tambahkan filter untuk user_id
+    if (role === "user") {
+      query += " WHERE user_id = ?";
+      values.push(userId);
     }
   
-        res.status(200).json({
-            status: 200,
-            success: true,
-            message: "OK",
-            data: datas,
-            });
+    db.query(query, values, (err, datas) => {
+      if (err) {
+        // Kirim respon jika terjadi error
+        return res.status(500).json({
+          status: 500,
+          success: false,
+          message: "Internal Server Error",
+          error: err.message,
+        });
+      }
+  
+      if (datas.length === 0) {
+        // Kirim respon jika tidak ada data
+        return res.status(404).json({
+          status: 404,
+          success: false,
+          message: "No transportation bookings found",
+        });
+      }
+  
+      // Kirim respon sukses dengan data
+      res.status(200).json({
+        status: 200,
+        success: true,
+        message: "Transportation bookings retrieved successfully",
+        data: datas,
+      });
     });
 };
+
 
 export const getTransportationBookingById = (req, res) => {
     const id = req.params.id;

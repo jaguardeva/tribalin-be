@@ -1,12 +1,13 @@
 import express from "express";
 import {
   getDestinations,
+  searchDestinationByName,
   getDestinationById,
   createDestination,
   editDestinationById,
   deleteDestinationById,
   createDestinationRating,
-  getDestiantionRating,
+  getDestinationRating,
   getDestinationRatingById,
   deleteDestinationRatingById,
 } from "../controllers/destinationController.js";
@@ -15,6 +16,8 @@ const router = express.Router();
 
 // GET semua destinasi - bisa diakses oleh user yang terautentikasi
 router.get("/destinations", getDestinations);
+
+router.get("/destinations/search", searchDestinationByName);
 
 // GET destinasi berdasarkan ID - bisa diakses oleh user yang terautentikasi
 router.get("/destinations/:id", getDestinationById);
@@ -39,7 +42,7 @@ router.delete(
 );
 
 router.post("/destinations/:id/ratings", verifyToken, createDestinationRating);
-router.get("/destinations/:id/ratings", getDestiantionRating);
+router.get("/destinations/:id/ratings", getDestinationRating);
 router.get("/destinations/ratings/:id", getDestinationRatingById);
 router.delete(
   "/destinations/ratings/:id/delete",

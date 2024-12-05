@@ -5,6 +5,9 @@ import {
   editAccommodationById,
   deleteAccommodationById,
   getAccommodationById,
+  createSpecification,
+  getSpecificationsByAccommodation,
+  deleteSpecification
 } from "../controllers/accommodationController.js";
 import { verifyToken, adminOnly } from "../middleware/authMiddleware.js";
 const router = express.Router();
@@ -23,6 +26,23 @@ router.delete(
   verifyToken,
   adminOnly,
   deleteAccommodationById
+);
+
+//Spesification
+router.get("/accommodations/spesification/:id",   
+  verifyToken,
+  adminOnly,
+  getSpecificationsByAccommodation
+);
+router.post("/accommodations/spesification/:id",   
+  verifyToken,
+  adminOnly,
+  createSpecification
+);
+router.delete("/accommodations/spesification/:id",   
+  verifyToken,
+  adminOnly,
+  deleteSpecification
 );
 
 export default router;

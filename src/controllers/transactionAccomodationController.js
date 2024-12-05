@@ -3,34 +3,21 @@ import db from "../../config/database.js";
 
 // Accomodation Booking
 export const getAccommodationBooking = (req, res) => {
-    const query = "SELECT * FROM accommodation_booking"; // Deklarasi dengan const
+    const { role, id: userId } = req.user; // Asumsikan informasi user tersedia di `req.user`
 
-    db.query(query, (err, datas) => {
-        if (err) {
-            res.status(500).json({
-            status: 500,
-            success: false,
-            message: "Internal Server Error",
-            error: err.message,
-        });
+    // Query dasar untuk admin dan user
+    let query = "SELECT * FROM accommodation_booking";
+    const values = [];
+
+    // Jika role adalah "user", tambahkan filter untuk user_id
+    if (role === "user") {
+        query += " WHERE user_id = ?";
+        values.push(userId);
     }
   
-        res.status(200).json({
-            status: 200,
-            success: true,
-            message: "OK",
-            data: datas,
-            });
-    });
-};
-
-export const getAccommodationBookingById = (req, res) => {
-    const id = req.params.id;
-    const query = `SELECT * FROM accommodation_booking where id = ${id}`; // Deklarasi dengan const
-  
-    db.query(query, (err, datas) => {
+    // Eksekusi query
+    db.query(query, values, (err, datas) => {
         if (err) {
-            // Kirim respon jika ada error
             return res.status(500).json({
                 status: 500,
                 success: false,
@@ -43,19 +30,60 @@ export const getAccommodationBookingById = (req, res) => {
             return res.status(404).json({
                 status: 404,
                 success: false,
-                message: "Accommodation booking not found",
+                message: "No transactions found",
             });
         }
-  
-      // Kirim respon sukses
+    
         res.status(200).json({
             status: 200,
             success: true,
-            message: "OK",
+            message: "Transactions retrieved successfully",
             data: datas,
         });
     });
 };
+
+export const getAccommodationBookingById = (req, res) => {
+    const { role, id: userId } = req.user; // Asumsikan informasi user tersedia di `req.user`
+    const bookingId = req.params.id;
+  
+    // Query dasar untuk admin dan user
+    let query = "SELECT * FROM accommodation_booking WHERE id = ?";
+    const values = [bookingId];
+  
+    // Jika role adalah "user", tambahkan filter untuk user_id
+    if (role === "user") {
+        query += " AND user_id = ?";
+        values.push(userId);
+    }
+  
+    // Eksekusi query
+    db.query(query, values, (err, datas) => {
+        if (err) {
+            return res.status(500).json({
+            status: 500,
+            success: false,
+            message: "Internal Server Error",
+            error: err.message,
+            });
+        }
+  
+        if (datas.length === 0) {
+            return res.status(404).json({
+            status: 404,
+            success: false,
+            message: "Accommodation booking not found",
+            });
+        }
+  
+        res.status(200).json({
+            status: 200,
+            success: true,
+            message: "Accommodation booking retrieved successfully",
+            data: datas,
+        });
+    });
+};  
 
 const generateBookingId = (type) => {
     const randomPart = new Date().getTime().toString().slice(-6); // Ambil 6 digit terakhir dari timestamp

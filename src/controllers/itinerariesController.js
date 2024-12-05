@@ -154,3 +154,70 @@ export const createItinerary = (req, res) => {
     });
   });
 };
+
+export const deleteItineraryById = (req, res) => {
+
+  const {role, id} = req.user;
+  const itemId = req.params.id;
+
+  if(role === 'user') {
+
+    const query = `DELETE FROM itineraries WHERE id = ${itemId}  AND user_id = ${id}`;
+
+    db.query(query, (err, result) => {
+
+      if (err) {
+
+        return res.status(500).json({
+          status: 500,
+          success: false,
+          message: "Internal Server Error",
+        })
+
+      }
+
+      if(result.affectedRows === 0) {
+        return res.status(404).json({
+          status: 404,
+          success: false,
+          message: "Itinerary not found"
+        })
+      }
+
+      res.status(200).json({
+        status: 200,
+        success: true,
+        message: "Itinerary deleted successfully"
+      })
+
+    })
+
+  } else if(role === "admin") {
+    const query = `DELETE FROM itineraries WHERE id = ${itemId}`;
+
+    db.query(query, (err, result) => {
+      if (err) {
+        return res.status(500).json({
+          status: 500,
+          success: false,
+          message: "Internal Server Error",
+        });
+      }
+
+      if(result.affectedRows === 0) {
+        return res.status(404).json({
+          status: 404,
+          success: false,
+          message: "Itinerary not found"
+        })
+      }
+
+      res.status(200).json({
+        status: 200,
+        success: true,
+        message: "Itinerary deleted successfully"
+      })
+    })
+  }
+
+}

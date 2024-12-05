@@ -1,5 +1,48 @@
 import db from "../../config/database.js";
 
+
+export const searchDestinationByName = (req, res) => {
+  const { name } = req.query;
+
+  // Validasi input query
+  if (!name) {
+    return res.status(400).json({
+      status: 400,
+      success: false,
+      message: "Bad Request: Missing 'name' query parameter",
+    });
+  }
+
+  const query = "SELECT * FROM destinations WHERE name LIKE ?";
+  const values = [`%${name}%`]; // Menggunakan wildcard untuk pencarian LIKE
+
+  db.query(query, values, (err, results) => {
+    if (err) {
+      return res.status(500).json({
+        status: 500,
+        success: false,
+        message: "Internal Server Error",
+        error: err.message,
+      });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        status: 404,
+        success: false,
+        message: `No destinations found with name containing '${name}'`,
+      });
+    }
+
+    res.status(200).json({
+      status: 200,
+      success: true,
+      message: "Destinations retrieved successfully",
+      data: results,
+    });
+  });
+};
+
 export const getDestinations = (req, res) => {
   const query = `
     SELECT 
@@ -91,11 +134,14 @@ export const createDestination = (req, res) => {
     is_freetransport,
     price,
   } = req.body;
+
+  // Gunakan nilai saat ini untuk created_at dan updated_at
   const createdAt = new Date();
   const updatedAt = createdAt;
 
+  // Pastikan jumlah placeholder (?) sesuai dengan jumlah kolom
   const query =
-    "INSERT INTO destinations (name, description, location, image_url, duration, is_freetransport, price, created_at, updated_at) VALUES (?, ?, ?, ?,?,?,?)";
+    "INSERT INTO destinations (name, description, location, image_url, duration, is_freetransport, price, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
   const values = [
     name,
     description,
@@ -104,6 +150,8 @@ export const createDestination = (req, res) => {
     duration,
     is_freetransport,
     price,
+    createdAt, // Tambahkan created_at
+    updatedAt, // Tambahkan updated_at
   ];
 
   db.query(query, values, (err, datas) => {
@@ -120,36 +168,61 @@ export const createDestination = (req, res) => {
       status: 201,
       success: true,
       message: "Destination created successfully",
-      // data: datas,
     });
   });
 };
 
 export const editDestinationById = (req, res) => {
-  const {
-    name,
-    description,
-    location,
-    image_url,
-    duration,
-    is_freetransport,
-    price,
-  } = req.body;
-
   const id = req.params.id;
 
-  const query =
-    "UPDATE destinations SET name = ?, description = ?, location = ?, image_url = ?, duration = ?, is_freetransport = ?, price = ? WHERE id = ?";
-  const values = [
-    name,
-    description,
-    location,
-    image_url,
-    duration,
-    is_freetransport,
-    price,
-    id,
-  ];
+  // Buat array untuk menyimpan query dinamis dan nilai
+  const updates = [];
+  const values = [];
+
+  // Cek field yang dikirim dalam req.body dan tambahkan ke query
+  if (req.body.name) {
+    updates.push("name = ?");
+    values.push(req.body.name);
+  }
+  if (req.body.description) {
+    updates.push("description = ?");
+    values.push(req.body.description);
+  }
+  if (req.body.location) {
+    updates.push("location = ?");
+    values.push(req.body.location);
+  }
+  if (req.body.image_url) {
+    updates.push("image_url = ?");
+    values.push(req.body.image_url);
+  }
+  if (req.body.duration) {
+    updates.push("duration = ?");
+    values.push(req.body.duration);
+  }
+  if (req.body.is_freetransport !== undefined) {
+    updates.push("is_freetransport = ?");
+    values.push(req.body.is_freetransport);
+  }
+  if (req.body.price) {
+    updates.push("price = ?");
+    values.push(req.body.price);
+  }
+
+  // Tambahkan ID ke array nilai
+  values.push(id);
+
+  // Jika tidak ada field yang di-update
+  if (updates.length === 0) {
+    return res.status(400).json({
+      status: 400,
+      success: false,
+      message: "Bad Request: No fields to update",
+    });
+  }
+
+  // Buat query dinamis
+  const query = `UPDATE destinations SET ${updates.join(", ")} WHERE id = ?`;
 
   db.query(query, values, (err, result) => {
     if (err) {
@@ -207,6 +280,8 @@ export const deleteDestinationById = (req, res) => {
   });
 };
 
+
+//RATING
 export const createDestinationRating = (req, res) => {
   const { rating, review } = req.body;
   const user_id = req.user.id;
@@ -244,12 +319,25 @@ export const createDestinationRating = (req, res) => {
   });
 };
 
-export const getDestiantionRating = (req, res) => {
+
+export const getDestinationRating = (req, res) => {
   const destination_id = req.params.id;
 
-  const query = `SELECT destination_rate.id, destination_rate.rating, destination_rate.review, destination_rate.created_at, destination_rate.updated_at, users.name as author FROM destination_rate INNER JOIN users ON destination_rate.user_id = users.id WHERE destination_id = ${destination_id}`;
+  const query = `
+    SELECT 
+      destination_rate.id, 
+      destination_rate.rating, 
+      destination_rate.review, 
+      destination_rate.created_at, 
+      destination_rate.updated_at, 
+      users.name AS author 
+    FROM destination_rate 
+    INNER JOIN users 
+      ON destination_rate.user_id = users.id 
+    WHERE destination_rate.destination_id = ?
+  `;
 
-  db.query(query, (err, datas) => {
+  db.query(query, [destination_id], (err, datas) => {
     if (err) {
       return res.status(500).json({
         status: 500,
@@ -275,6 +363,7 @@ export const getDestiantionRating = (req, res) => {
     });
   });
 };
+
 
 export const getDestinationRatingById = (req, res) => {
   const { id } = req.params;

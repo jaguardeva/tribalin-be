@@ -9,7 +9,7 @@ import {
 import { adminOnly, verifyToken } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
-router.get("/transportationBooking", getTransportationBooking);
+router.get("/transportationBooking", verifyToken, getTransportationBooking);
 router.get(
     "/transportationBooking/:id",
     verifyToken,
@@ -20,8 +20,8 @@ router.post(
     verifyToken,
     createTransportationBooking
 );
-router.post("/transportationBooking/paymentCallback", paymentCallback);
-router.delete("/transportationBooking/:id",    // Route untuk delete
+router.post("/transportationBooking/paymentCallback", verifyToken, paymentCallback);
+router.delete("/transportationBooking/:id/delete",    // Route untuk delete
     verifyToken, 
     deleteTransportationBooking  // Fungsi delete
 );

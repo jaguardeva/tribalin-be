@@ -3,59 +3,91 @@ import db from "../../config/database.js";
 
 // Destination Booking
 export const getDestinationBooking = (req, res) => {
-    const query = "SELECT * FROM destination_booking"; // Deklarasi dengan const
-
-    db.query(query, (err, datas) => {
-        if (err) {
-            res.status(500).json({
-            status: 500,
-            success: false,
-            message: "Internal Server Error",
-            error: err.message,
-        });
+    const { role, id: userId } = req.user; // Asumsikan informasi user tersedia di `req.user`
+  
+    // Query dasar untuk admin dan user
+    let query = "SELECT * FROM destination_booking";
+    const values = [];
+  
+    // Jika role adalah "user", tambahkan filter untuk user_id
+    if (role === "user") {
+      query += " WHERE user_id = ?";
+      values.push(userId);
     }
   
-        res.status(200).json({
-            status: 200,
-            success: true,
-            message: "OK",
-            data: datas,
-            });
+    // Eksekusi query
+    db.query(query, values, (err, datas) => {
+      if (err) {
+        return res.status(500).json({
+          status: 500,
+          success: false,
+          message: "Internal Server Error",
+          error: err.message,
+        });
+      }
+  
+      if (datas.length === 0) {
+        return res.status(404).json({
+          status: 404,
+          success: false,
+          message: "No destination bookings found",
+        });
+      }
+  
+      res.status(200).json({
+        status: 200,
+        success: true,
+        message: "Destination bookings retrieved successfully",
+        data: datas,
+      });
     });
 };
 
+
 export const getDestinationBookingById = (req, res) => {
-    const id = req.params.id;
-    const query = `SELECT * FROM destination_booking where id = ${id}`; // Deklarasi dengan const
+    const { id } = req.params; // ID booking yang diminta
+    const { role, id: userId } = req.user; // Informasi user dari req.user
   
-    db.query(query, (err, datas) => {
-        if (err) {
-            // Kirim respon jika ada error
-            return res.status(500).json({
-                status: 500,
-                success: false,
-                message: "Internal Server Error",
-                error: err.message,
-            });
-        }
+    // Query dasar
+    let query = "SELECT * FROM destination_booking WHERE id = ?";
+    const values = [id];
   
-        if (datas.length === 0) {
-            return res.status(404).json({
-                status: 404,
-                success: false,
-                message: "Destination booking not found",
-            });
-        }
+    // Jika role adalah "user", tambahkan filter untuk user_id
+    if (role === "user") {
+      query += " AND user_id = ?";
+      values.push(userId);
+    }
+  
+    db.query(query, values, (err, datas) => {
+      if (err) {
+        // Kirim respon jika terjadi error
+        return res.status(500).json({
+          status: 500,
+          success: false,
+          message: "Internal Server Error",
+          error: err.message,
+        });
+      }
+  
+      if (datas.length === 0) {
+        // Kirim respon jika data tidak ditemukan
+        return res.status(404).json({
+          status: 404,
+          success: false,
+          message: "Destination booking not found",
+        });
+      }
   
       // Kirim respon sukses
-        res.status(200).json({
-            status: 200,
-            success: true,
-            message: "OK",
-            data: datas,
-        });
+      res.status(200).json({
+        status: 200,
+        success: true,
+        message: "Destination booking retrieved successfully",
+        data: datas[0], // Ambil data pertama karena ID bersifat unik
+      });
     });
 };
+  
 
 
 export const createDestinationBooking = (req, res) => {
