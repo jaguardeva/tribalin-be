@@ -9,7 +9,7 @@ import {
 import { adminOnly, verifyToken } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
-router.get("/accommodationBooking", verifyToken, getAccommodationBooking);
+router.get("/accommodationBooking", getAccommodationBooking);
 
 router.get(
   "/accommodationBooking/:id",
