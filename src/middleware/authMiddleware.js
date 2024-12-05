@@ -19,8 +19,6 @@ export const verifyToken = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (error) {
-    console.error("Token Verification Error:", error);
-
     if (error.name === "TokenExpiredError") {
       return res.status(401).json({
         status: 401,
@@ -33,7 +31,6 @@ export const verifyToken = (req, res, next) => {
       status: 403,
       success: false,
       message: "Failed to authenticate token",
-      error: error.message,
     });
   }
 };
