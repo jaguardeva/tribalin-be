@@ -62,47 +62,51 @@ export const register = async (req, res) => {
 
 // Login
 export const login = async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ message: "All fields are required." });
-  }
-
-  try {
-    const [users] = await db
-      .promise()
-      .query("SELECT * FROM users WHERE email = ?", [email]);
-    const user = users[0];
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found." });
+    const { email, password } = req.body;
+  
+    if (!email || !password) {
+      return res.status(400).json({ message: "All fields are required." });
     }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: "Invalid credentials." });
+  
+    try {
+      const [users] = await db
+        .promise()
+        .query("SELECT * FROM users WHERE email = ?", [email]);
+      const user = users[0];
+  
+      if (!user) {
+        return res.status(404).json({ message: "User not found." });
+      }
+  
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+  
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: "Invalid credentials." });
+      }
+  
+      // Buat token JWT
+      const token = jwt.sign(
+        { id: user.id, role: user.role },
+        generateJwtSecret(),
+        { expiresIn: JWT_EXPIRES_IN }
+      );
+  
+      // Destrukturisasi data user untuk menghapus password
+      const { password: _, ...userWithoutPassword } = user;
+  
+      res.status(200).json({
+        status: 200,
+        success: true,
+        message: "OK",
+        data: userWithoutPassword, // Kirim data user tanpa password
+        token: token,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error", error: error.message });
     }
-
-    // Gunakan fungsi generateJwtSecret yang sudah dimodifikasi
-    const token = jwt.sign(
-      { id: user.id, role: user.role },
-      generateJwtSecret(), // Sekarang akan selalu menghasilkan key yang sama
-      { expiresIn: JWT_EXPIRES_IN }
-    );
-
-    res.status(200).json({
-      status: 200,
-      success: true,
-      message: "OK",
-      data: user,
-      token: token,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
+  };
+  
 
 // Protected route (optional, untuk admin/user)
 export const secure = (req, res) => {
