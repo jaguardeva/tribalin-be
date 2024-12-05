@@ -2,20 +2,15 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import db from "../../config/database.js";
-import crypto from "crypto"; // Impor crypto untuk menghasilkan key dinamis
+import crypto from "crypto";
+import dotenv from "dotenv";
+dotenv.config();
 
 // Setel JWT_EXPIRES_IN sesuai kebutuhan
-const JWT_EXPIRES_IN = "1h"; // Token berlaku 3 menit
+const JWT_EXPIRES_IN = "1h";
 
-let STATIC_JWT_SECRET;
-
-export const generateJwtSecret = () => {
-  // Jika belum ada secret key, buat satu kali
-  if (!STATIC_JWT_SECRET) {
-    STATIC_JWT_SECRET = crypto.randomBytes(64).toString("hex");
-  }
-  return STATIC_JWT_SECRET;
-};
+const STATIC_JWT_SECRET =
+  process.env.JWT_SECRET_TOKEN || crypto.randomBytes(32).toString("hex");
 
 // Register
 export const register = async (req, res) => {
@@ -62,51 +57,50 @@ export const register = async (req, res) => {
 
 // Login
 export const login = async (req, res) => {
-    const { email, password } = req.body;
-  
-    if (!email || !password) {
-      return res.status(400).json({ message: "All fields are required." });
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: "All fields are required." });
+  }
+
+  try {
+    const [users] = await db
+      .promise()
+      .query("SELECT * FROM users WHERE email = ?", [email]);
+    const user = users[0];
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
     }
-  
-    try {
-      const [users] = await db
-        .promise()
-        .query("SELECT * FROM users WHERE email = ?", [email]);
-      const user = users[0];
-  
-      if (!user) {
-        return res.status(404).json({ message: "User not found." });
-      }
-  
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-  
-      if (!isPasswordValid) {
-        return res.status(401).json({ message: "Invalid credentials." });
-      }
-  
-      // Buat token JWT
-      const token = jwt.sign(
-        { id: user.id, role: user.role },
-        generateJwtSecret(),
-        { expiresIn: JWT_EXPIRES_IN }
-      );
-  
-      // Destrukturisasi data user untuk menghapus password
-      const { password: _, ...userWithoutPassword } = user;
-  
-      res.status(200).json({
-        status: 200,
-        success: true,
-        message: "OK",
-        data: userWithoutPassword, // Kirim data user tanpa password
-        token: token,
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Server error", error: error.message });
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: "Invalid credentials." });
     }
-  };
-  
+
+    // Buat token JWT
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      STATIC_JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
+    );
+
+    // Destrukturisasi data user untuk menghapus password
+    const { password: _, ...userWithoutPassword } = user;
+
+    res.status(200).json({
+      status: 200,
+      success: true,
+      message: "OK",
+      data: userWithoutPassword, // Kirim data user tanpa password
+      token: token,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
 
 // Protected route (optional, untuk admin/user)
 export const secure = (req, res) => {
@@ -119,7 +113,7 @@ export const secure = (req, res) => {
   }
 
   try {
-    const secret = generateJwtSecret(); // Generate secret key dinamis untuk verifikasi
+    const secret = STATIC_JWT_SECRET; // Generate secret key dinamis untuk verifikasi
 
     const decoded = jwt.verify(token, secret); // Gunakan secret dinamis untuk verifikasi token
     req.user = decoded; // Simpan info user pada request
@@ -130,32 +124,31 @@ export const secure = (req, res) => {
 };
 
 export const logout = (req, res) => {
-    // Ambil token dari header Authorization
-    const token = req.headers.authorization?.split(" ")[1];
+  // Ambil token dari header Authorization
+  const token = req.headers.authorization?.split(" ")[1];
 
-    if (!token) {
-        return res.status(400).json({
-            message: "No token provided.",
-        });
-    }
+  if (!token) {
+    return res.status(400).json({
+      message: "No token provided.",
+    });
+  }
 
-    try {
-        // Verifikasi token (opsional, untuk memastikan token valid sebelum logout)
-        const secret = generateJwtSecret(); // Secret key dinamis
-        jwt.verify(token, secret);
+  try {
+    // Verifikasi token (opsional, untuk memastikan token valid sebelum logout)
+    const secret = STATIC_JWT_SECRET; // Secret key dinamis
+    jwt.verify(token, secret);
 
-        // Kirimkan respon sukses tanpa melakukan perubahan di database
-        res.status(200).json({
-            status: 200,
-            success: true,
-            message: "Logout successful. Token is now invalid.",
-        });
-    } catch (error) {
-        // Jika token tidak valid atau expired
-        res.status(401).json({
-            message: "Invalid or expired token.",
-            error: error.message,
-        });
-    }
+    // Kirimkan respon sukses tanpa melakukan perubahan di database
+    res.status(200).json({
+      status: 200,
+      success: true,
+      message: "Logout successful. Token is now invalid.",
+    });
+  } catch (error) {
+    // Jika token tidak valid atau expired
+    res.status(401).json({
+      message: "Invalid or expired token.",
+      error: error.message,
+    });
+  }
 };
-

@@ -6,27 +6,22 @@ import {
   deleteAccommodationById,
   getAccommodationById,
 } from "../controllers/accommodationController.js";
-import { verifyToken, checkRole } from "../middleware/authMiddleware.js";
+import { verifyToken, adminOnly } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 router.get("/accommodations", getAllAccommodations);
 router.get("/accommodations/:id", getAccommodationById);
-router.post(
-  "/accommodations",
-  verifyToken,
-  checkRole("admin"),
-  createAccommodation
-);
+router.post("/accommodations", verifyToken, adminOnly, createAccommodation);
 router.put(
   "/accommodations/:id/edit",
   verifyToken,
-  checkRole("admin"),
+  adminOnly,
   editAccommodationById
 );
 router.delete(
   "/accommodations/:id",
   verifyToken,
-  checkRole("admin"),
+  adminOnly,
   deleteAccommodationById
 );
 

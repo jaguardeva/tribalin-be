@@ -7,7 +7,7 @@ import {
   deleteDestinationById,
   createDestinationRating,
 } from "../controllers/destinationController.js";
-import { checkRole, verifyToken } from "../middleware/authMiddleware.js";
+import { adminOnly, verifyToken } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 // GET semua destinasi - bisa diakses oleh user yang terautentikasi
@@ -17,18 +17,13 @@ router.get("/destinations", getDestinations);
 router.get("/destinations/:id", getDestinationById);
 
 // POST destinasi baru - hanya bisa diakses oleh admin
-router.post(
-  "/destinations",
-  verifyToken,
-  checkRole("admin"),
-  createDestination
-);
+router.post("/destinations", verifyToken, adminOnly, createDestination);
 
 // PUT edit destinasi - hanya bisa diakses oleh admin (uncomment jika dibutuhkan)
 router.put(
   "/destinations/:id/edit",
   verifyToken,
-  checkRole("admin"),
+  adminOnly,
   editDestinationById
 );
 
@@ -36,7 +31,7 @@ router.put(
 router.delete(
   "/destinations/:id/delete",
   verifyToken,
-  checkRole("admin"),
+  adminOnly,
   deleteDestinationById
 );
 
