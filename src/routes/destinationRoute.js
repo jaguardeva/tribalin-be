@@ -6,6 +6,9 @@ import {
   editDestinationById,
   deleteDestinationById,
   createDestinationRating,
+  getDestiantionRating,
+  getDestinationRatingById,
+  deleteDestinationRatingById,
 } from "../controllers/destinationController.js";
 import { adminOnly, verifyToken } from "../middleware/authMiddleware.js";
 const router = express.Router();
@@ -35,5 +38,13 @@ router.delete(
   deleteDestinationById
 );
 
-router.post("/destinations/:id/rating", verifyToken, createDestinationRating);
+router.post("/destinations/:id/ratings", verifyToken, createDestinationRating);
+router.get("/destinations/:id/ratings", getDestiantionRating);
+router.get("/destinations/ratings/:id", getDestinationRatingById);
+router.delete(
+  "/destinations/ratings/:id/delete",
+  verifyToken,
+  adminOnly,
+  deleteDestinationRatingById
+);
 export default router;
