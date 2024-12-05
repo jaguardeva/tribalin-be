@@ -47,7 +47,7 @@ export const getDestinations = (req, res) => {
   const query = `
     SELECT 
       destinations.*, 
-      AVG(destination_rate.rating) AS avg_rating,
+      ROUND(AVG(destination_rate.rating), 1) AS avg_rating,  -- Membulatkan dengan 1 angka di belakang koma
       COUNT(destination_rate.id) AS total_rating
     FROM 
       destinations 
@@ -89,15 +89,25 @@ export const getDestinations = (req, res) => {
 
 export const getDestinationById = (req, res) => {
   const id = req.params.id;
-  const query = `SELECT destinations.*, AVG(destination_rate.rating) AS avg_rating, COUNT(destination_rate.id) AS total_rating
-FROM destinations
-LEFT JOIN destination_rate ON destinations.id = destination_rate.destination_id
-WHERE destinations.id = ${id}
-GROUP BY destinations.id`;
+  const query = `
+    SELECT 
+      destinations.*, 
+      ROUND(AVG(destination_rate.rating), 1) AS avg_rating,  -- Membulatkan dengan 1 angka di belakang koma
+      COUNT(destination_rate.id) AS total_rating
+    FROM 
+      destinations 
+    LEFT JOIN 
+      destination_rate 
+    ON 
+      destinations.id = destination_rate.destination_id
+    WHERE 
+      destinations.id = ?
+    GROUP BY 
+      destinations.id
+  `;
 
-  db.query(query, (err, datas) => {
+  db.query(query, [id], (err, datas) => {
     if (err) {
-      // Kirim respon jika ada error
       return res.status(500).json({
         status: 500,
         success: false,
@@ -114,15 +124,16 @@ GROUP BY destinations.id`;
       });
     }
 
-    // Kirim respon sukses
     res.status(200).json({
       status: 200,
       success: true,
       message: "OK",
-      data: datas,
+      data: datas[0], // Menampilkan data destinasi yang ditemukan
     });
   });
 };
+
+
 
 export const createDestination = (req, res) => {
   const {
