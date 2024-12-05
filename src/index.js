@@ -13,13 +13,13 @@ dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use("/api", accommodationRoute);
-app.use("/api/auth", authRoute);
-app.use("/api", destionationRoute);
-app.use("/api", itinerariesRoute);
-app.use("/api", transaction);
+app.use("/", accommodationRoute);
+app.use("/auth", authRoute);
+app.use("/", destionationRoute);
+app.use("/", itinerariesRoute);
+app.use("/", transaction);
 
-app.use("/api", transportationRoute);
+app.use("/", transportationRoute);
 
 app.get("/", (req, res) => {
   res.status(200).json({

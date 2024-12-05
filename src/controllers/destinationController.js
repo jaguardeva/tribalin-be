@@ -1,11 +1,25 @@
 import db from "../../config/database.js";
 
 export const getDestinations = (req, res) => {
-  const query = "SELECT * FROM destinations"; // Deklarasi dengan const
+  const query = `
+    SELECT 
+      destinations.*, 
+      AVG(destination_rate.rating) AS avg_rating,
+      COUNT(destination_rate.id) AS total_rating
+    FROM 
+      destinations 
+    LEFT JOIN 
+      destination_rate 
+    ON 
+      destinations.id = destination_rate.destination_id
+    GROUP BY 
+      destinations.id
+  `;
 
   db.query(query, (err, datas) => {
     if (err) {
-      res.status(500).json({
+      console.error("Database query error:", err.message);
+      return res.status(500).json({
         status: 500,
         success: false,
         message: "Internal Server Error",
@@ -13,10 +27,18 @@ export const getDestinations = (req, res) => {
       });
     }
 
-    res.status(200).json({
+    if (datas.length === 0) {
+      return res.status(404).json({
+        status: 404,
+        success: false,
+        message: "No destinations found.",
+      });
+    }
+
+    return res.status(200).json({
       status: 200,
       success: true,
-      message: "OK",
+      message: "Destinations retrieved successfully.",
       data: datas,
     });
   });
@@ -24,7 +46,11 @@ export const getDestinations = (req, res) => {
 
 export const getDestinationById = (req, res) => {
   const id = req.params.id;
-  const query = `SELECT * FROM destinations where id = ${id}`; // Deklarasi dengan const
+  const query = `SELECT destinations.*, AVG(destination_rate.rating) AS avg_rating, COUNT(destination_rate.id) AS total_rating
+FROM destinations
+LEFT JOIN destination_rate ON destinations.id = destination_rate.destination_id
+WHERE destinations.id = ${id}
+GROUP BY destinations.id`;
 
   db.query(query, (err, datas) => {
     if (err) {
@@ -65,6 +91,8 @@ export const createDestination = (req, res) => {
     is_freetransport,
     price,
   } = req.body;
+  const createdAt = new Date();
+  const updatedAt = createdAt;
 
   const query =
     "INSERT INTO destinations (name, description, location, image_url, duration, is_freetransport, price, created_at, updated_at) VALUES (?, ?, ?, ?,?,?,?)";
@@ -212,6 +240,101 @@ export const createDestinationRating = (req, res) => {
       status: 201,
       success: true,
       message: "Destination rating created successfully",
+    });
+  });
+};
+
+export const getDestiantionRating = (req, res) => {
+  const destination_id = req.params.id;
+
+  const query = `SELECT destination_rate.id, destination_rate.rating, destination_rate.review, destination_rate.created_at, destination_rate.updated_at, users.name as author FROM destination_rate INNER JOIN users ON destination_rate.user_id = users.id WHERE destination_id = ${destination_id}`;
+
+  db.query(query, (err, datas) => {
+    if (err) {
+      return res.status(500).json({
+        status: 500,
+        success: false,
+        message: "Internal Server Error!",
+        error: err.message,
+      });
+    }
+
+    if (datas.length === 0) {
+      return res.status(404).json({
+        status: 404,
+        success: false,
+        message: "Destination rating not found!",
+      });
+    }
+
+    res.status(200).json({
+      status: 200,
+      success: true,
+      message: "Get destination rating successfully!",
+      data: datas,
+    });
+  });
+};
+
+export const getDestinationRatingById = (req, res) => {
+  const { id } = req.params;
+
+  const query = `SELECT destination_rate.*, users.name as author FROM destination_rate INNER JOIN users ON destination_rate.user_id = users.id WHERE destination_rate.id = ${id}`;
+
+  db.query(query, (err, datas) => {
+    if (err) {
+      return res.status(500).json({
+        status: 500,
+        success: false,
+        message: "Internal Server Error!",
+        error: err.message,
+      });
+    }
+
+    if (datas.length === 0) {
+      return res.status(404).json({
+        status: 404,
+        success: false,
+        message: "Destination rating not found!",
+      });
+    }
+
+    res.status(200).json({
+      status: 200,
+      success: true,
+      message: "Get destination rating successfully!",
+      data: datas,
+    });
+  });
+};
+
+export const deleteDestinationRatingById = async (req, res) => {
+  const { id } = req.params;
+
+  const query = `DELETE FROM destination_rate WHERE id = ${id}`;
+
+  db.query(query, (err, datas) => {
+    if (err) {
+      return res.status(500).json({
+        status: 500,
+        success: false,
+        message: "Internal Server Error!",
+        error: err.message,
+      });
+    }
+
+    if (datas.affectedRows === 0) {
+      return res.status(404).json({
+        status: 404,
+        success: false,
+        message: "Destination rating not found!",
+      });
+    }
+
+    res.status(200).json({
+      status: 200,
+      success: true,
+      message: "Delete destination rating successfully!",
     });
   });
 };

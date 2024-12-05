@@ -25,55 +25,58 @@ export const register = async (req, res) => {
   }
 
   // Cek apakah email sudah ada di database
-  db.query("SELECT * FROM users WHERE email = ?", [email], async (err, results) => {
-    if (err) {
-      return res.status(500).json({
-        status: 500,
-        success: false,
-        message: "Internal Server Error",
-        error: err.message,
-      });
-    }
-
-    if (results.length > 0) {
-      return res.status(400).json({
-        status: 400,
-        success: false,
-        message: "Email is already registered.",
-      });
-    }
-
-    // Hash password sebelum disimpan
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Simpan ke database
-    const role = "user"; // Default role
-    const values = [name, email, hashedPassword, role];
-
-    db.query(
-      "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
-      values,
-      (err, datas) => {
-        if (err) {
-          return res.status(500).json({
-            status: 500,
-            success: false,
-            message: "Internal Server Error",
-            error: err.message,
-          });
-        }
-
-        res.status(200).json({
-          status: 200,
-          success: true,
-          message: "Registration successful",
-          data: datas,
+  db.query(
+    "SELECT * FROM users WHERE email = ?",
+    [email],
+    async (err, results) => {
+      if (err) {
+        return res.status(500).json({
+          status: 500,
+          success: false,
+          message: "Internal Server Error",
+          error: err.message,
         });
       }
-    );
-  });
-};
 
+      if (results.length > 0) {
+        return res.status(400).json({
+          status: 400,
+          success: false,
+          message: "Email is already registered.",
+        });
+      }
+
+      // Hash password sebelum disimpan
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Simpan ke database
+      const role = "user"; // Default role
+      const values = [name, email, hashedPassword, role];
+
+      db.query(
+        "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
+        values,
+        (err, datas) => {
+          if (err) {
+            return res.status(500).json({
+              status: 500,
+              success: false,
+              message: "Internal Server Error",
+              error: err.message,
+            });
+          }
+
+          res.status(200).json({
+            status: 200,
+            success: true,
+            message: "Registration successful",
+            data: datas,
+          });
+        }
+      );
+    }
+  );
+};
 
 // Login
 export const login = async (req, res) => {
@@ -90,13 +93,15 @@ export const login = async (req, res) => {
     const user = users[0];
 
     if (!user) {
-      return res.status(404).json({ message: "User not found." });
+      return res.status(404).json({ message: "User not found!" });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      return res.status(401).json({ message: "Invalid credentials." });
+      return res
+        .status(401)
+        .json({ message: "Email or password is incorrect!" });
     }
 
     // Buat token JWT
