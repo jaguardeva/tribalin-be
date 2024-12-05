@@ -6,7 +6,10 @@ import authRoute from "./routes/authRoute.js";
 import destionationRoute from "./routes/destinationRoute.js";
 import transportationRoute from "./routes/transportationRoute.js";
 import itinerariesRoute from "./routes/itinerariesRoute.js";
-import transaction from "./routes/transactionRoute.js";
+import transactionAccomodation from "./routes/transactionAccomodationRoute.js";
+import transactionDestination from "./routes/transactionDestinationRoute.js";
+import transactionTransportation from "./routes/transactionTransportationRoute.js";
+
 
 dotenv.config();
 
@@ -17,8 +20,9 @@ app.use("/api", accommodationRoute);
 app.use("/api/auth", authRoute);
 app.use("/api", destionationRoute);
 app.use("/api", itinerariesRoute);
-app.use("/api", transaction);
-
+app.use("/api", transactionAccomodation);
+app.use("/api", transactionDestination);
+app.use("/api", transactionTransportation);
 app.use("/api", transportationRoute);
 
 app.get("/", (req, res) => {

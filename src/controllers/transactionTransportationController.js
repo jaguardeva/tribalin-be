@@ -1,8 +1,7 @@
 import db from "../../config/database.js";
-// import { v4 as uuidv4 } from "uuid";
 
-export const getAccommodationBooking = (req, res) => {
-    const query = "SELECT * FROM accommodation_booking"; // Deklarasi dengan const
+export const getTransportationBooking = (req, res) => {
+    const query = "SELECT * FROM transportation_booking"; // Deklarasi dengan const
 
     db.query(query, (err, datas) => {
         if (err) {
@@ -23,9 +22,9 @@ export const getAccommodationBooking = (req, res) => {
     });
 };
 
-export const getAccommodationBookingById = (req, res) => {
+export const getTransportationBookingById = (req, res) => {
     const id = req.params.id;
-    const query = `SELECT * FROM accommodation_booking where id = ${id}`; // Deklarasi dengan const
+    const query = `SELECT * FROM transportation_booking where id = ${id}`; // Deklarasi dengan const
   
     db.query(query, (err, datas) => {
         if (err) {
@@ -42,7 +41,7 @@ export const getAccommodationBookingById = (req, res) => {
             return res.status(404).json({
                 status: 404,
                 success: false,
-                message: "Accommodation booking not found",
+                message: "Transportation booking not found",
             });
         }
   
@@ -56,37 +55,35 @@ export const getAccommodationBookingById = (req, res) => {
     });
 };
 
-
-// Fungsi untuk membuat booking_id berdasarkan tipe akomodasi
 const generateBookingId = (type) => {
     const randomPart = new Date().getTime().toString().slice(-6); // Ambil 6 digit terakhir dari timestamp
     let bookingId = '';
 
     switch(type) {
-        case 'hotel':
-            bookingId = `HTL-${randomPart}`;
+        case 'car': 
+            bookingId = `CAR-${randomPart}`; 
             break;
-        case 'villa':
-            bookingId = `VLL-${randomPart}`;
+        case 'motor': 
+            bookingId = `MTR-${randomPart}`; 
             break;
-        case 'guesthouse':
-            bookingId = `GHT-${randomPart}`;
+        case 'bike': 
+            bookingId = `BKE-${randomPart}`; 
             break;
         default:
-            throw new Error('Unknown accommodation type');
+            throw new Error('Unknown transportation type');
     }
 
     return bookingId;
 };
 
-export const createAccommodationBooking = (req, res) => {
+export const createTransportationBooking = (req, res) => {
     const { check_in, check_out } = req.body;
     const user_id = req.user.id;
-    const accommodation_id = req.params.id;
+    const transportation_id = req.params.id;
     const createdAt = new Date();
     const status = "pending";
 
-    if (!check_in || !check_out || !accommodation_id) {
+    if (!check_in || !check_out || !transportation_id) {
         return res.status(400).json({
             status: 400,
             success: false,
@@ -95,8 +92,8 @@ export const createAccommodationBooking = (req, res) => {
     }
 
     // Query untuk mengambil tipe akomodasi
-    const getTypeQuery = "SELECT type FROM accommodations WHERE id = ?";
-    db.query(getTypeQuery, [accommodation_id], (err, results) => {
+    const getTypeQuery = "SELECT type FROM transportations WHERE id = ?";
+    db.query(getTypeQuery, [transportation_id], (err, results) => {
         if (err) {
             return res.status(500).json({
                 status: 500,
@@ -110,15 +107,15 @@ export const createAccommodationBooking = (req, res) => {
             return res.status(404).json({
                 status: 404,
                 success: false,
-                message: "Accommodation not found",
+                message: "Transportation not found",
             });
         }
 
         const type = results[0].type;
         const booking_id = generateBookingId(type); // Menghasilkan booking_id berdasarkan tipe
 
-        const getPriceQuery = "SELECT price FROM accommodations WHERE id = ?";
-        db.query(getPriceQuery, [accommodation_id], (err, results) => {
+        const getPriceQuery = "SELECT price FROM transportations WHERE id = ?";
+        db.query(getPriceQuery, [transportation_id], (err, results) => {
             if (err) {
                 return res.status(500).json({
                     status: 500,
@@ -132,7 +129,7 @@ export const createAccommodationBooking = (req, res) => {
                 return res.status(404).json({
                     status: 404,
                     success: false,
-                    message: "Accommodation not found",
+                    message: "Transportation not found",
                 });
             }
 
@@ -155,10 +152,10 @@ export const createAccommodationBooking = (req, res) => {
             const total = perday * price;
 
             const insertQuery =
-                "INSERT INTO accommodation_booking (booking_id, accommodation_id, user_id, check_in, check_out, total, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                "INSERT INTO transportation_booking (booking_id, transportation_id, user_id, check_in, check_out, total, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
             const values = [
                 booking_id,
-                accommodation_id,
+                transportation_id,
                 user_id,
                 check_in,
                 check_out,
@@ -180,11 +177,11 @@ export const createAccommodationBooking = (req, res) => {
                 res.status(201).json({
                     status: 201,
                     success: true,
-                    message: "Accommodation booking created successfully",
+                    message: "Transportation booking created successfully",
                     data: {
                         id: result.insertId,
                         booking_id,
-                        accommodation_id,
+                        transportation_id,
                         user_id,
                         check_in,
                         check_out,
@@ -197,7 +194,6 @@ export const createAccommodationBooking = (req, res) => {
         });
     });
 };
-
 
 const mapPaymentStatusToBookingStatus = (paymentStatus) => {
     switch (paymentStatus) {
@@ -228,7 +224,7 @@ export const paymentCallback = (req, res) => {
 
     // Perbarui status di database berdasarkan booking_id
     const updateQuery =
-        "UPDATE accommodation_booking SET status = ? WHERE booking_id = ?";
+        "UPDATE transportation_booking SET status = ? WHERE booking_id = ?";
     db.query(updateQuery, [mappedStatus, booking_id], (err, result) => {
         if (err) {
             return res.status(500).json({
@@ -256,14 +252,14 @@ export const paymentCallback = (req, res) => {
     });
 };
 
+export const deleteTransportationBooking = (req, res) => {
+    const { id } = req.params; // Gunakan id sebagai parameter URL
 
-export const deleteAccommodationBooking = (req, res) => {
-    const { booking_id } = req.params; 
-
-    const deleteQuery = "DELETE FROM accommodation_booking WHERE booking_id = ?";
+    // Query untuk menghapus booking berdasarkan id
+    const deleteQuery = "DELETE FROM transportation_booking WHERE id = ?";
     
-    // Jalankan query untuk menghapus data berdasarkan booking_id
-    db.query(deleteQuery, [booking_id], (err, result) => {
+    // Jalankan query untuk menghapus data berdasarkan id
+    db.query(deleteQuery, [id], (err, result) => {
         if (err) {
             return res.status(500).json({
                 status: 500,
@@ -286,9 +282,7 @@ export const deleteAccommodationBooking = (req, res) => {
         res.status(200).json({
             status: 200,
             success: true,
-            message: "Accommodation booking deleted successfully",
+            message: "Transportation booking deleted successfully",
         });
     });
 };
-
-
