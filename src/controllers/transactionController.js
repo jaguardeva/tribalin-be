@@ -1,4 +1,5 @@
 import db from "../../config/database.js";
+import { v4 as uuidv4 } from "uuid";
 
 export const getAccommodationBooking = (req, res) => {
     const query = "SELECT * FROM accommodation_booking"; // Deklarasi dengan const
@@ -55,15 +56,16 @@ export const getAccommodationBookingById = (req, res) => {
     });
 };
 
+
 export const createAccommodationBooking = (req, res) => {
-    const { check_in, check_out, perday } = req.body;
-    const user_id = req.user.id; // Pastikan req.user sudah diisi oleh middleware auth
+    const { check_in, check_out } = req.body;
+    const user_id = req.user.id;
     const accommodation_id = req.params.id;
     const createdAt = new Date();
-    const status = "pending"; // Status awal
+    const status = "pending";
+    const uuid = uuidv4(); // Generate UUID
 
-    // Validasi input
-    if (!check_in || !check_out || !perday || !accommodation_id) {
+    if (!check_in || !check_out || !accommodation_id) {
         return res.status(400).json({
             status: 400,
             success: false,
@@ -71,7 +73,6 @@ export const createAccommodationBooking = (req, res) => {
         });
     }
 
-    // Ambil harga dari tabel accommodations
     const getPriceQuery = "SELECT price FROM accommodations WHERE id = ?";
     db.query(getPriceQuery, [accommodation_id], (err, results) => {
         if (err) {
@@ -92,17 +93,32 @@ export const createAccommodationBooking = (req, res) => {
         }
 
         const price = results[0].price;
-        const total = perday * price; // Hitung total berdasarkan input perday
+        const checkInDate = new Date(check_in);
+        const checkOutDate = new Date(check_out);
 
-        // Masukkan booking ke tabel accommodation_booking
+        // Hitung durasi dalam hari
+        const perday = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+
+        if (perday <= 0) {
+            return res.status(400).json({
+                status: 400,
+                success: false,
+                message: "Invalid dates: check-out must be after check-in",
+            });
+        }
+
+        // Hitung total
+        const total = perday * price;
+
+
         const insertQuery =
-            "INSERT INTO accommodation_booking (accommodation_id, user_id, check_in, check_out, perday, total, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            "INSERT INTO accommodation_booking (uuid, accommodation_id, user_id, check_in, check_out, total, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         const values = [
+            uuid, // Simpan UUID
             accommodation_id,
             user_id,
             check_in,
             check_out,
-            perday,
             total,
             status,
             createdAt,
@@ -123,12 +139,12 @@ export const createAccommodationBooking = (req, res) => {
                 success: true,
                 message: "Accommodation booking created successfully",
                 data: {
-                    id: result.insertId, // Dapatkan ID yang baru dimasukkan
+                    id: result.insertId,
+                    uuid, 
                     accommodation_id,
                     user_id,
                     check_in,
                     check_out,
-                    perday,
                     total,
                     status,
                     created_at: createdAt,
@@ -137,4 +153,86 @@ export const createAccommodationBooking = (req, res) => {
         });
     });
 };
+
+const mapPaymentStatusToBookingStatus = (paymentStatus) => {
+    switch (paymentStatus) {
+        case "success":
+        case "paid":
+            return "confirmed";
+        case "failed":
+            return "cancelled";
+        default:
+            return "pending";
+    }
+};
+
+export const paymentCallback = (req, res) => {
+    const { uuid, status } = req.body;
+
+    if (!uuid || !status) {
+        return res.status(400).json({
+            status: 400,
+            success: false,
+            message: "Bad Request: Missing required fields",
+        });
+    }
+
+    // Mapping status dari payment gateway ke status booking
+    const mappedStatus = mapPaymentStatusToBookingStatus(status);
+
+    // Perbarui status di database
+    const updateQuery =
+        "UPDATE accommodation_booking SET status = ? WHERE uuid = ?";
+    db.query(updateQuery, [mappedStatus, uuid], (err) => {
+        if (err) {
+            return res.status(500).json({
+                status: 500,
+                success: false,
+                message: "Internal Server Error",
+                error: err.message,
+            });
+        }
+
+        res.status(200).json({
+            status: 200,
+            success: true,
+            message: "Payment status updated successfully",
+        });
+    });
+};
+
+export const deleteAccommodationBooking = (req, res) => {
+    const { uuid } = req.params; // Ambil uuid dari parameter URL
+
+    const deleteQuery = "DELETE FROM accommodation_booking WHERE uuid = ?";
+    
+    // Jalankan query untuk menghapus data berdasarkan uuid
+    db.query(deleteQuery, [uuid], (err, result) => {
+        if (err) {
+            return res.status(500).json({
+                status: 500,
+                success: false,
+                message: "Internal Server Error",
+                error: err.message,
+            });
+        }
+
+        // Jika tidak ada data yang dihapus
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                status: 404,
+                success: false,
+                message: "Booking not found",
+            });
+        }
+
+        // Jika berhasil menghapus
+        res.status(200).json({
+            status: 200,
+            success: true,
+            message: "Accommodation booking deleted successfully",
+        });
+    });
+};
+
 
